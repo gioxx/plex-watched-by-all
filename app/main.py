@@ -671,10 +671,23 @@ async def user_history(user_id: str):
     for ev in events:
         out = dict(ev)
         rk = ev.get("ratingKey")
+        thumb = ev.get("thumb")
+
+        # If a Plex item no longer exists, skip it.
         if rk:
             md = await _plex_title_thumb(str(rk))
-            if md:
-                out.update(md)
+            if not md:
+                continue
+            out.update(md)
+            thumb = out.get("thumb") or thumb
+
+        # If there is no Plex match and no thumb (missing poster), skip the entry.
+        if not thumb:
+            continue
+
+        out["thumb"] = thumb
+        if not out.get("title") and out.get("episodeTitle"):
+            out["title"] = out.get("episodeTitle")
         enriched.append(out)
 
     def _sort_key(e: Dict[str, Any]):

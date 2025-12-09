@@ -12,7 +12,8 @@ services:
       # Jellyfin (optional, to cross-reference history from Jellyfin)
       # - JELLYFIN_URL=http://JELLYFIN_IP:8096
       # - JELLYFIN_APIKEY=YOUR_JELLYFIN_API_KEY
-      # - JELLYFIN_USER_MAP={"<jellyfin_user_id>": "<plex_user_id>"}
+      # Mapping accepts IDs or names (case-insensitive), JSON between quotation marks:
+      # - JELLYFIN_USER_MAP='{"jellyfinUserOrId":"plexUserIdOrName"}'
       - WATCH_THRESHOLD=0.95
       - REFRESH_MINUTES=30
       - HISTORY_MAX_ROWS=200000

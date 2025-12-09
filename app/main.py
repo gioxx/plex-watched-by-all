@@ -5,6 +5,8 @@ import os
 import time
 from typing import Any, Dict, List
 
+from httpx import HTTPStatusError
+
 from fastapi import FastAPI
 from fastapi.responses import HTMLResponse, JSONResponse
 from fastapi.staticfiles import StaticFiles
@@ -63,28 +65,49 @@ def _is_completed_item(h: Dict[str, Any]) -> bool:
 
 
 async def _plex_show_episode_keys(show_rating_key: str) -> List[str]:
-    """
-    Return all episode rating keys for a given show, by enumerating:
-      show -> seasons (children)
-      season -> episodes (children)
+    """Return all episode rating keys for a given show.
+
+    Primary strategy: use Plex /allLeaves (fast + avoids season enumeration).
+    Fallback: enumerate show -> seasons -> episodes via /children.
+
+    IMPORTANT: Never crash the app if a ratingKey can't be resolved (404).
     """
     if show_rating_key in cache.show_episodes:
         return cache.show_episodes[show_rating_key]
 
-    seasons_json = await plex.get_children(show_rating_key)
-    seasons = seasons_json.get("MediaContainer", {}).get("Metadata", []) or []
     episode_keys: List[str] = []
 
-    for s in seasons:
-        season_key = str(s.get("ratingKey", "")).strip()
-        if not season_key:
-            continue
-        eps_json = await plex.get_children(season_key)
-        eps = eps_json.get("MediaContainer", {}).get("Metadata", []) or []
-        for e in eps:
+    # 1) Try /allLeaves first.
+    try:
+        leaves_json = await plex.get_all_leaves(show_rating_key)
+        leaves = leaves_json.get("MediaContainer", {}).get("Metadata", []) or []
+        for e in leaves:
             ek = str(e.get("ratingKey", "")).strip()
             if ek:
                 episode_keys.append(ek)
+    except HTTPStatusError as e:
+        if e.response is not None and e.response.status_code != 404:
+            raise
+
+    # 2) Fallback to /children traversal.
+    if not episode_keys:
+        try:
+            seasons_json = await plex.get_children(show_rating_key)
+            seasons = seasons_json.get("MediaContainer", {}).get("Metadata", []) or []
+
+            for s in seasons:
+                season_key = str(s.get("ratingKey", "")).strip()
+                if not season_key:
+                    continue
+                eps_json = await plex.get_children(season_key)
+                eps = eps_json.get("MediaContainer", {}).get("Metadata", []) or []
+                for e in eps:
+                    ek = str(e.get("ratingKey", "")).strip()
+                    if ek:
+                        episode_keys.append(ek)
+        except HTTPStatusError as e:
+            if e.response is not None and e.response.status_code != 404:
+                raise
 
     cache.show_episodes[show_rating_key] = episode_keys
     return episode_keys

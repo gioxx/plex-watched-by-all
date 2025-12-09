@@ -188,6 +188,8 @@
             <div style="padding:14px 14px; display:flex; flex-direction:column; gap:10px;">
                 <div class="muted">Se non selezioni nessuno, verranno considerati <b>tutti</b> gli utenti.</div>
                 <div id="usersList" style="display:grid; grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); gap:10px;"></div>
+                <div class="muted">Utenti Jellyfin rilevati (per mappare con Plex):</div>
+                <div id="jellyfinList" style="display:grid; grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); gap:10px;"></div>
                 <div style="display:flex; gap:10px; justify-content:flex-end; flex-wrap:wrap; padding-top:6px;">
                     <button id="btnSelectAll">Seleziona tutti</button>
                     <button id="btnSelectNone">Nessuno (tutti)</button>
@@ -218,6 +220,7 @@
         const btnForceRefresh = document.getElementById('btnForceRefresh');
         const historyControls = document.getElementById('historyControls');
         const historyUser = document.getElementById('historyUser');
+        const jellyfinList = document.getElementById('jellyfinList');
 
         let allUsers = [];
         let selectedUserIds = new Set();
@@ -258,6 +261,14 @@
             if (prev && allUsers.some(u => u.user_id === prev)) {
                 historyUser.value = prev;
             }
+
+            // Show Jellyfin users for mapping clarity
+            const jfUsers = (data.jellyfin_users || []).sort((a, b) => (a.name || '').localeCompare(b.name || ''));
+            jellyfinList.innerHTML = jfUsers.map(u => `
+        <div style="border:1px solid #1d2330; padding:8px 10px; border-radius:10px; background:#0f1320;">
+          <div style="font-weight:700;">${escapeHtml(u.name)}</div>
+          <div class="muted">ID: ${escapeHtml(u.user_id)}</div>
+        </div>`).join('');
         }
 
         async function applyUsers() {

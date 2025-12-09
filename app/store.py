@@ -12,6 +12,9 @@ class Cache:
     last_refresh_ts: float = 0.0
     users: Dict[str, str] = field(default_factory=dict)  # user_id -> friendly_name
 
+    # If empty, all users are considered. Otherwise only these user_ids.
+    selected_user_ids: Set[str] = field(default_factory=set)
+
     # Completion map: (user_id, rating_key) -> True
     completed: Set[Tuple[str, str]] = field(default_factory=set)
 

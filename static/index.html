@@ -302,13 +302,14 @@
             const percent = typeof it.percent === 'number' ? Math.round(it.percent * 100) : (it.percent || 0);
             const completed = it.completed ? '✅' : '';
             const thumb = it.thumb || it.jellyfinThumb || '';
+            const subtitle = it.seriesName ? `${escapeHtml(it.seriesName)} · ${escapeHtml(it.title || '')}` : escapeHtml(it.title || '');
             return `
         <div class="card">
           <div class="poster">
             ${thumb ? `<img src="${thumb}" alt="">` : `<span class="muted">No poster</span>`}
           </div>
           <div class="meta">
-            <div class="title">${escapeHtml(it.title || '')}</div>
+            <div class="title">${subtitle}</div>
             <div class="sub">${escapeHtml(type)} · ${escapeHtml(source)} ${completed}</div>
             <div class="muted">Viewed: ${date} · ${percent}%</div>
           </div>

@@ -469,11 +469,12 @@ async def _merge_jellyfin_history(provider_movie_to_plex: Dict[str, str]) -> Non
         items = items_resp.get("Items", []) if isinstance(items_resp, dict) else (items_resp or [])
         for it in items:
             typ = (it.get("Type") or "").lower()
-            if typ != "movie":
+            if typ not in ("movie", "episode"):
                 continue
 
-            pk = _provider_key_from_ids(it.get("ProviderIds", {}))
-            plex_rk = provider_movie_to_plex.get(pk) if pk else None
+            provider_ids = it.get("ProviderIds", {})
+            pk = _provider_key_from_ids(provider_ids)
+            plex_rk = provider_movie_to_plex.get(pk) if (pk and typ == "movie") else None
 
             ud = it.get("UserData", {}) or {}
             played_pct = 0.0
@@ -483,7 +484,7 @@ async def _merge_jellyfin_history(provider_movie_to_plex: Dict[str, str]) -> Non
                 played_pct = 0.0
             is_completed = bool(ud.get("Played")) or played_pct >= WATCH_THRESHOLD
 
-            if plex_rk:
+            if typ == "movie" and plex_rk:
                 cache.movies.add(plex_rk)
                 if is_completed:
                     cache.completed.add((plex_uid, plex_rk))
@@ -496,14 +497,18 @@ async def _merge_jellyfin_history(provider_movie_to_plex: Dict[str, str]) -> Non
             # Record history even if we cannot map to a Plex ratingKey
             event = {
                 "source": "jellyfin",
-                "type": "movie",
-                "ratingKey": plex_rk,
+                "type": typ,
+                "ratingKey": plex_rk if typ == "movie" else None,
                 "providerKey": pk,
                 "percent": played_pct,
                 "completed": is_completed,
                 "date": _ts_from_iso(ud.get("LastPlayedDate")) if isinstance(ud, dict) else 0.0,
                 "title": it.get("Name") or "",
                 "year": it.get("ProductionYear") or "",
+                "seriesName": it.get("SeriesName") or "",
+                "seasonName": it.get("SeasonName") or "",
+                "episodeTitle": it.get("Name") or "",
+                "episodeId": it.get("Id"),
                 "jellyfinId": it.get("Id"),
                 "thumb": _jellyfin_thumb(it.get("Id"), (it.get("PrimaryImageTag") or "")),
             }

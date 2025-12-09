@@ -1,0 +1,259 @@
+<!doctype html>
+<html lang="it">
+
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width,initial-scale=1" />
+    <title>Plex - Watched by Everyone</title>
+    <style>
+        :root {
+            color-scheme: dark;
+        }
+
+        body {
+            margin: 0;
+            font-family: system-ui, -apple-system, Segoe UI, Roboto, Ubuntu, Cantarell, "Helvetica Neue", Arial;
+            background: #0b0c10;
+            color: #e9eef5;
+        }
+
+        header {
+            padding: 18px 16px;
+            border-bottom: 1px solid #1d2330;
+            display: flex;
+            gap: 12px;
+            align-items: center;
+            justify-content: space-between;
+        }
+
+        .brand {
+            font-weight: 700;
+            letter-spacing: .2px;
+        }
+
+        .pill {
+            font-size: 12px;
+            padding: 6px 10px;
+            border: 1px solid #1d2330;
+            border-radius: 999px;
+            color: #b9c3d3;
+        }
+
+        main {
+            padding: 16px;
+            max-width: 1100px;
+            margin: 0 auto;
+        }
+
+        .tabs {
+            display: flex;
+            gap: 8px;
+            margin-bottom: 12px;
+        }
+
+        button {
+            background: #121621;
+            color: #e9eef5;
+            border: 1px solid #1d2330;
+            padding: 10px 12px;
+            border-radius: 12px;
+            cursor: pointer;
+        }
+
+        button.active {
+            border-color: #5b7cff;
+            box-shadow: 0 0 0 3px rgba(91, 124, 255, .15);
+        }
+
+        .row {
+            display: flex;
+            gap: 10px;
+            flex-wrap: wrap;
+            align-items: center;
+            margin-bottom: 12px;
+        }
+
+        input {
+            background: #0f1320;
+            color: #e9eef5;
+            border: 1px solid #1d2330;
+            padding: 10px 12px;
+            border-radius: 12px;
+            width: min(520px, 100%);
+        }
+
+        .grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+            gap: 10px;
+        }
+
+        .card {
+            border: 1px solid #1d2330;
+            border-radius: 16px;
+            background: #0f1320;
+            overflow: hidden;
+            display: flex;
+            gap: 12px;
+        }
+
+        .poster {
+            width: 74px;
+            height: 110px;
+            background: #0b0c10;
+            flex: 0 0 auto;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .poster img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+            display: block;
+        }
+
+        .meta {
+            padding: 10px 10px 10px 0;
+            display: flex;
+            flex-direction: column;
+            gap: 6px;
+        }
+
+        .title {
+            font-weight: 700;
+            line-height: 1.15;
+        }
+
+        .sub {
+            color: #b9c3d3;
+            font-size: 13px;
+        }
+
+        .muted {
+            color: #94a3b8;
+            font-size: 12px;
+        }
+
+        .footer {
+            margin-top: 14px;
+            color: #94a3b8;
+            font-size: 12px;
+        }
+    </style>
+</head>
+
+<body>
+    <header>
+        <div class="brand">Watched by Everyone</div>
+        <div id="summary" class="pill">Loading…</div>
+    </header>
+
+    <main>
+        <div class="tabs">
+            <button id="tabMovies" class="active">Film</button>
+            <button id="tabShows">Serie (complete)</button>
+        </div>
+
+        <div class="row">
+            <input id="search" placeholder="Cerca titolo…" />
+            <span id="count" class="pill">—</span>
+            <button id="refresh">Refresh</button>
+        </div>
+
+        <div id="grid" class="grid"></div>
+
+        <div class="footer">
+            Definizione: un titolo appare qui solo se risulta “visto” da <b>tutti</b> gli utenti.
+            Per le serie: tutti gli episodi devono risultare visti da tutti.
+        </div>
+    </main>
+
+    <script>
+        const grid = document.getElementById('grid');
+        const summary = document.getElementById('summary');
+        const count = document.getElementById('count');
+        const search = document.getElementById('search');
+        const tabMovies = document.getElementById('tabMovies');
+        const tabShows = document.getElementById('tabShows');
+        const refreshBtn = document.getElementById('refresh');
+
+        let mode = 'movies';
+        let items = [];
+
+        function cardHTML(it) {
+            const year = it.year ? ` (${it.year})` : '';
+            const type = it.type ? it.type : '';
+            return `
+        <div class="card">
+          <div class="poster">
+            ${it.thumb ? `<img src="${it.thumb}" alt="">` : `<span class="muted">No poster</span>`}
+          </div>
+          <div class="meta">
+            <div class="title">${escapeHtml(it.title)}${escapeHtml(year)}</div>
+            <div class="sub">${escapeHtml(type)} · ratingKey ${escapeHtml(it.ratingKey)}</div>
+          </div>
+        </div>
+      `;
+        }
+
+        function escapeHtml(s) {
+            return String(s || '').replace(/[&<>"']/g, (c) => ({
+                '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;'
+            }[c]));
+        }
+
+        function render() {
+            const q = search.value.trim().toLowerCase();
+            const filtered = q ? items.filter(i => (i.title || '').toLowerCase().includes(q)) : items;
+            grid.innerHTML = filtered.map(cardHTML).join('');
+            count.textContent = `${filtered.length} / ${items.length}`;
+        }
+
+        async function loadSummary() {
+            const r = await fetch('/api/summary');
+            const s = await r.json();
+            const date = s.lastRefresh ? new Date(s.lastRefresh * 1000).toLocaleString() : '—';
+            summary.textContent = `${s.users} utenti · ${s.moviesByAll} film · ${s.showsByAll} serie · aggiornato: ${date}`;
+        }
+
+        async function loadItems() {
+            grid.innerHTML = '';
+            count.textContent = '—';
+            const url = mode === 'movies' ? '/api/movies' : '/api/shows';
+            const r = await fetch(url);
+            const data = await r.json();
+            items = data.items || [];
+            render();
+        }
+
+        tabMovies.addEventListener('click', async () => {
+            mode = 'movies';
+            tabMovies.classList.add('active');
+            tabShows.classList.remove('active');
+            await loadItems();
+        });
+
+        tabShows.addEventListener('click', async () => {
+            mode = 'shows';
+            tabShows.classList.add('active');
+            tabMovies.classList.remove('active');
+            await loadItems();
+        });
+
+        search.addEventListener('input', render);
+
+        refreshBtn.addEventListener('click', async () => {
+            await loadSummary();
+            await loadItems();
+        });
+
+        (async () => {
+            await loadSummary();
+            await loadItems();
+        })();
+    </script>
+</body>
+
+</html>

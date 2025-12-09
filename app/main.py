@@ -476,6 +476,15 @@ async def _merge_jellyfin_history(provider_movie_to_plex: Dict[str, str]) -> Non
             pk = _provider_key_from_ids(provider_ids)
             plex_rk = provider_movie_to_plex.get(pk) if (pk and typ == "movie") else None
 
+            primary_tag = it.get("PrimaryImageTag") or (it.get("ImageTags") or {}).get("Primary") or ""
+            series_primary_tag = it.get("SeriesPrimaryImageTag") or ""
+            series_id = it.get("SeriesId") or ""
+            thumb_url = ""
+            if primary_tag:
+                thumb_url = _jellyfin_thumb(it.get("Id"), primary_tag)
+            elif series_primary_tag and series_id:
+                thumb_url = _jellyfin_thumb(series_id, series_primary_tag)
+
             ud = it.get("UserData", {}) or {}
             played_pct = 0.0
             try:
@@ -510,7 +519,7 @@ async def _merge_jellyfin_history(provider_movie_to_plex: Dict[str, str]) -> Non
                 "episodeTitle": it.get("Name") or "",
                 "episodeId": it.get("Id"),
                 "jellyfinId": it.get("Id"),
-                "thumb": _jellyfin_thumb(it.get("Id"), (it.get("PrimaryImageTag") or "")),
+                "thumb": thumb_url,
             }
             _record_history(plex_uid, event)
 

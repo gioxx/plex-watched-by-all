@@ -7,7 +7,7 @@ from typing import Any, Dict, List
 
 from httpx import HTTPStatusError
 
-from fastapi import FastAPI
+from fastapi import FastAPI, Body
 from fastapi.responses import HTMLResponse, JSONResponse
 from fastapi.staticfiles import StaticFiles
 
@@ -62,6 +62,17 @@ def _is_completed_item(h: Dict[str, Any]) -> bool:
         return pc_float >= WATCH_THRESHOLD
     except Exception:
         return False
+
+
+def _effective_user_ids() -> List[str]:
+    """Return the user_ids that should be considered for computations.
+
+    If `cache.selected_user_ids` is empty, all users are considered.
+    Otherwise, only the selected IDs that still exist in the current user list.
+    """
+    if cache.selected_user_ids:
+        return [uid for uid in cache.users.keys() if uid in cache.selected_user_ids]
+    return list(cache.users.keys())
 
 
 async def _plex_show_episode_keys(show_rating_key: str) -> List[str]:
@@ -187,7 +198,14 @@ async def refresh_cache(force: bool = False) -> None:
             except Exception:
                 pass
 
-    user_ids = list(cache.users.keys())
+    user_ids = _effective_user_ids()
+
+    # If no users are effectively selected, results should be empty but the app must not crash.
+    if not user_ids:
+        cache.movies_by_all = []
+        cache.shows_by_all = []
+        cache.last_refresh_ts = time.time()
+        return
 
     # Movies watched by all
     movies_by_all: List[str] = []
@@ -268,12 +286,52 @@ async def summary():
     await refresh_cache(force=False)
     return JSONResponse(
         {
-            "users": len(cache.users),
+            "users": len(_effective_user_ids()),
             "moviesByAll": len(cache.movies_by_all),
             "showsByAll": len(cache.shows_by_all),
             "lastRefresh": cache.last_refresh_ts,
         }
     )
+
+
+@app.get("/api/users")
+async def api_users():
+    """Return all known users plus the current selection."""
+    await refresh_cache(force=False)
+    return JSONResponse(
+        {
+            "users": [{"user_id": uid, "name": name} for uid, name in cache.users.items()],
+            "selected_user_ids": sorted(list(cache.selected_user_ids)),
+        }
+    )
+
+
+@app.post("/api/selected-users")
+async def api_set_selected_users(payload: Dict[str, Any] = Body(...)):
+    """Set which users should be considered. Empty selection means 'all users'."""
+    await refresh_cache(force=False)
+
+    raw_ids = payload.get("selected_user_ids", [])
+    if not isinstance(raw_ids, list):
+        return JSONResponse({"error": "selected_user_ids must be a list"}, status_code=400)
+
+    new_ids = {str(x).strip() for x in raw_ids if str(x).strip()}
+
+    # Keep only IDs that exist in the current user list.
+    known_ids = set(cache.users.keys())
+    cache.selected_user_ids = {uid for uid in new_ids if uid in known_ids}
+
+    # Force recompute with the new selection.
+    await refresh_cache(force=True)
+
+    return JSONResponse({"ok": True, "selected_user_ids": sorted(list(cache.selected_user_ids))})
+
+
+@app.post("/api/refresh")
+async def api_force_refresh():
+    """Force a cache refresh (useful after library changes)."""
+    await refresh_cache(force=True)
+    return JSONResponse({"ok": True, "lastRefresh": cache.last_refresh_ts})
 
 
 @app.get("/api/movies")

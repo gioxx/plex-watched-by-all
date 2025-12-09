@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import asyncio
 import json
+import logging
 import os
 import re
 import time
@@ -45,6 +46,8 @@ cache = Cache()
 app = FastAPI(title="Plex Watched-By-All Dashboard")
 
 app.mount("/static", StaticFiles(directory="static"), name="static")
+
+logger = logging.getLogger("plex-watched-by-all")
 
 
 def _is_completed_item(h: Dict[str, Any]) -> bool:
@@ -361,6 +364,7 @@ async def _merge_jellyfin_history(provider_movie_to_plex: Dict[str, str]) -> Non
     try:
         jf_users = await jellyfin.get_users()
     except Exception:
+        logger.warning("Jellyfin: failed to fetch users", exc_info=True)
         return
 
     try:
@@ -396,14 +400,22 @@ async def _merge_jellyfin_history(provider_movie_to_plex: Dict[str, str]) -> Non
 
         return None
 
+    mapped_users: List[str] = []
+    skipped_users: List[str] = []
+
     for jf_u in jf_users or []:
         plex_uid = map_user(jf_u)
+        jf_name = (jf_u.get("Name") or jf_u.get("Username") or jf_u.get("Id") or "").strip()
         if not plex_uid:
+            skipped_users.append(jf_name)
             continue
+
+        mapped_users.append(f"{jf_name}->{plex_uid}")
 
         try:
             items_resp = await jellyfin.get_user_items(str(jf_u.get("Id") or jf_u.get("id")))
         except Exception:
+            logger.warning("Jellyfin: failed to fetch items for user %s", jf_name, exc_info=True)
             continue
 
         items = items_resp.get("Items", []) if isinstance(items_resp, dict) else (items_resp or [])
@@ -438,6 +450,11 @@ async def _merge_jellyfin_history(provider_movie_to_plex: Dict[str, str]) -> Non
             entry = cache.user_movie_progress[plex_uid].setdefault(plex_rk, {"percent": 0.0, "completed": False})
             entry["percent"] = max(entry.get("percent", 0.0), played_pct)
             entry["completed"] = bool(entry.get("completed")) or is_completed
+
+    if mapped_users:
+        logger.info("Jellyfin: mapped users: %s", ", ".join(mapped_users))
+    if skipped_users:
+        logger.info("Jellyfin: skipped users without mapping/match: %s", ", ".join(skipped_users))
 
 
 @app.on_event("startup")

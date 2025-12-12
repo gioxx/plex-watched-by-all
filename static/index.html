@@ -224,8 +224,8 @@
                 const episodes = filtered.filter(i => i.seriesName);
                 const grouped = {};
                 episodes.forEach(e => {
-                    const key = `${e.seriesName || 'Serie'}|${e.seasonName || ''}`;
-                    if (!grouped[key]) grouped[key] = { meta: e, items: [], lastDate: 0 };
+                    const key = e.seriesId || e.seriesName || 'Serie';
+                    if (!grouped[key]) grouped[key] = { meta: e, items: [], lastDate: 0, key };
                     grouped[key].items.push(e);
                     if (e.date && e.date > grouped[key].lastDate) grouped[key].lastDate = e.date;
                 });
@@ -239,7 +239,7 @@
                     const cover = coverSrc
                       ? `<img src="${coverSrc}" alt="">`
                       : `<span class="muted">No poster</span>`;
-                    const seriesId = g.meta?.seriesRatingKey || g.meta?.seriesId || g.items[0]?.seriesId || "";
+                    const seriesId = g.meta?.seriesRatingKey || g.meta?.seriesId || g.items[0]?.seriesId || g.key || "";
                     return `
         <div class="card">
           <div class="poster">

@@ -9,6 +9,28 @@
     <style>
         h1 { margin: 0; font-size: 22px; }
         .card { padding: 12px; }
+        .episode {
+            display: flex;
+            gap: 10px;
+            align-items: center;
+        }
+        .episode-cover {
+            width: 60px;
+            height: 90px;
+            border-radius: 10px;
+            overflow: hidden;
+            background: #0b0c10;
+            flex: 0 0 auto;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        .episode-cover img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+            display: block;
+        }
     </style>
 </head>
 <body>
@@ -73,8 +95,13 @@
                         ? `S${String(e.seasonIndex).padStart(2,'0')}E${String(e.episodeIndex).padStart(2,'0')}`
                         : '';
                     const when = e.date ? new Date(e.date * 1000).toLocaleString() : '—';
+                    const coverSrc = e.seriesThumb || e.thumb || e.jellyfinThumb || '';
+                    const cover = coverSrc
+                        ? `<img src="${coverSrc}" alt="">`
+                        : `<span class="muted">No poster</span>`;
                     return `<div class="episode">
-                        <div>
+                        <div class="episode-cover">${cover}</div>
+                        <div style="flex:1 1 auto;">
                             <div class="epi-title">${code ? code + ' · ' : ''}${(e.title && e.title !== seriesName) ? e.title : (e.episodeTitle || '')}</div>
                             <div class="epi-sub">${e.seasonName || ''}</div>
                         </div>

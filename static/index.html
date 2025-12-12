@@ -308,7 +308,6 @@
 
         function historyHTML(it) {
             const date = it.date ? new Date(it.date * 1000).toLocaleString() : '—';
-            const percent = typeof it.percent === 'number' ? Math.round(it.percent * 100) : (it.percent || 0);
             const thumb = it.thumb || it.jellyfinThumb || '';
             const subtitle = it.seriesName ? `${escapeHtml(it.seriesName)} · ${escapeHtml(it.seasonName || '')}` : '';
             return `
@@ -318,7 +317,7 @@
           </div>
           <div class="meta">
             <div class="title">${subtitle || escapeHtml(it.title || '')}</div>
-            <div class="muted">Viewed: ${date} · ${percent}%</div>
+            <div class="muted">Viewed: ${date}</div>
           </div>
         </div>
       `;

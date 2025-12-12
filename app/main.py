@@ -204,6 +204,16 @@ async def refresh_cache(force: bool = False) -> None:
                 except Exception:
                     runtime_minutes = 0
 
+                official_rating = it.get("OfficialRating") or ""
+                community_rating = it.get("CommunityRating") or None
+                play_count = None
+                try:
+                    ud = it.get("UserData") or {}
+                    pc_val = ud.get("PlayCount")
+                    play_count = int(pc_val) if pc_val is not None else None
+                except Exception:
+                    play_count = None
+
                 cache.jellyfin_meta[item_id] = {
                     "ratingKey": item_id,
                     "title": it.get("Name") or "",
@@ -211,6 +221,9 @@ async def refresh_cache(force: bool = False) -> None:
                     "type": "movie",
                     "thumb": thumb_url,
                     "runtimeMinutes": runtime_minutes,
+                    "officialRating": official_rating,
+                    "communityRating": community_rating,
+                    "playCount": play_count,
                 }
 
             elif typ == "episode":
@@ -352,7 +365,6 @@ async def api_users():
         {
             "users": [{"user_id": uid, "name": name} for uid, name in cache.users.items()],
             "selected_user_ids": sorted(list(cache.selected_user_ids)),
-            "jellyfin_users": [{"user_id": uid, "name": name} for uid, name in cache.jellyfin_users.items()],
         }
     )
 

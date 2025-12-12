@@ -28,6 +28,10 @@ class Cache:
 
     # Episode list per show
     show_episodes: Dict[str, List[str]] = field(default_factory=dict)
+    # Season runtime minutes aggregate
+    season_runtime_minutes: Dict[str, int] = field(default_factory=dict)
+    # Track episodes already accounted for per season to avoid double counting
+    season_episode_seen: Dict[str, Set[str]] = field(default_factory=dict)
 
     # Per-user progress
     # Movies: user_id -> rating_key -> {"percent": float 0-1, "completed": bool}

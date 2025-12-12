@@ -141,6 +141,8 @@ async def refresh_cache(force: bool = False) -> None:
     cache.user_history.clear()
     cache.jellyfin_users.clear()
     cache.jellyfin_meta.clear()
+    cache.season_runtime_minutes.clear()
+    cache.season_episode_seen.clear()
 
     try:
         jf_users = await jellyfin.get_users()
@@ -257,6 +259,19 @@ async def refresh_cache(force: bool = False) -> None:
                         "type": "season",
                         "thumb": thumb_url,
                     }
+
+                # Aggregate runtime per season once per episode
+                runtime_ticks = it.get("RunTimeTicks") or 0
+                runtime_minutes = 0
+                try:
+                    runtime_minutes = int(int(runtime_ticks) / 10_000_000 / 60)
+                except Exception:
+                    runtime_minutes = 0
+                if season_id:
+                    seen = cache.season_episode_seen.setdefault(season_id, set())
+                    if item_id not in seen:
+                        seen.add(item_id)
+                        cache.season_runtime_minutes[season_id] = cache.season_runtime_minutes.get(season_id, 0) + runtime_minutes
 
             event = {
                 "source": "jellyfin",
@@ -415,6 +430,7 @@ async def shows():
     for rk in cache.shows_by_all:
         it = await _item_title_thumb(rk)
         if it is not None:
+            it["runtimeMinutes"] = cache.season_runtime_minutes.get(rk, 0)
             items.append(it)
     return JSONResponse({"items": items})
 
@@ -450,11 +466,13 @@ async def user_items(user_id: str):
         md = await _item_title_thumb(season_id)
         if md is None:
             continue
+        md_runtime = cache.season_runtime_minutes.get(season_id, 0)
         md.update(
             {
                 "watchedEpisodes": watched,
                 "totalEpisodes": total,
                 "completed": total > 0 and watched >= total,
+                "runtimeMinutes": md_runtime,
             }
         )
         shows_resp.append(md)

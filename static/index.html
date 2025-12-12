@@ -6,207 +6,7 @@
     <meta name="viewport" content="width=device-width,initial-scale=1" />
     <title>Jellyfin - Watched by Everyone</title>
     <link rel="icon" type="image/svg+xml" href="/static/favicon.svg" />
-    <style>
-        :root {
-            color-scheme: dark;
-        }
-
-        body {
-            margin: 0;
-            font-family: system-ui, -apple-system, Segoe UI, Roboto, Ubuntu, Cantarell, "Helvetica Neue", Arial;
-            background: #0b0c10;
-            color: #e9eef5;
-        }
-
-        header {
-            padding: 18px 16px;
-            border-bottom: 1px solid #1d2330;
-            display: flex;
-            gap: 12px;
-            align-items: center;
-            justify-content: space-between;
-        }
-
-        .brand {
-            font-weight: 700;
-            letter-spacing: .2px;
-        }
-
-        .pill {
-            font-size: 12px;
-            padding: 6px 10px;
-            border: 1px solid #1d2330;
-            border-radius: 999px;
-            color: #b9c3d3;
-        }
-
-        main {
-            padding: 16px;
-            max-width: 1100px;
-            margin: 0 auto;
-        }
-
-        .tabs {
-            display: flex;
-            gap: 8px;
-            margin-bottom: 12px;
-        }
-
-        button {
-            background: #121621;
-            color: #e9eef5;
-            border: 1px solid #1d2330;
-            padding: 10px 12px;
-            border-radius: 12px;
-            cursor: pointer;
-        }
-
-        button.active {
-            border-color: #5b7cff;
-            box-shadow: 0 0 0 3px rgba(91, 124, 255, .15);
-        }
-
-        .row {
-            display: flex;
-            gap: 10px;
-            flex-wrap: wrap;
-            align-items: center;
-            margin-bottom: 12px;
-        }
-
-        input {
-            background: #0f1320;
-            color: #e9eef5;
-            border: 1px solid #1d2330;
-            padding: 10px 12px;
-            border-radius: 12px;
-            width: min(520px, 100%);
-        }
-
-        .grid {
-            display: grid;
-            grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
-            gap: 10px;
-        }
-
-        .section-block {
-            width: 100%;
-        }
-
-        .card {
-            border: 1px solid #1d2330;
-            border-radius: 16px;
-            background: #0f1320;
-            overflow: hidden;
-            display: flex;
-            gap: 12px;
-        }
-
-        .poster {
-            width: 74px;
-            height: 110px;
-            background: #0b0c10;
-            flex: 0 0 auto;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-        }
-
-        .poster img {
-            width: 100%;
-            height: 100%;
-            object-fit: cover;
-            display: block;
-        }
-
-        .meta {
-            padding: 10px 10px 10px 0;
-            display: flex;
-            flex-direction: column;
-            gap: 6px;
-        }
-
-        .title {
-            font-weight: 700;
-            line-height: 1.15;
-        }
-
-        .sub {
-            color: #b9c3d3;
-            font-size: 13px;
-            min-height: 18px;
-        }
-
-        .ellipsis {
-            display: inline-block;
-            max-width: 140px;
-            overflow: hidden;
-            text-overflow: ellipsis;
-            white-space: nowrap;
-            vertical-align: bottom;
-        }
-
-        .muted {
-            color: #94a3b8;
-            font-size: 12px;
-        }
-
-        .section-title {
-            margin: 0 0 10px;
-            padding-top: 18px;
-            font-weight: 700;
-            font-size: 18px;
-        }
-
-        .footer {
-            margin-top: 14px;
-            color: #94a3b8;
-            font-size: 12px;
-        }
-
-        .modal-backdrop {
-            position: fixed;
-            inset: 0;
-            background: rgba(0,0,0,.55);
-            display: none;
-            align-items: center;
-            justify-content: center;
-            padding: 20px;
-            z-index: 10;
-        }
-
-        .modal-panel {
-            background: #0f1320;
-            border: 1px solid #1d2330;
-            border-radius: 16px;
-            max-width: 900px;
-            width: 100%;
-            max-height: 90vh;
-            overflow: hidden;
-            display: flex;
-            flex-direction: column;
-        }
-
-        .modal-header {
-            padding: 14px;
-            border-bottom: 1px solid #1d2330;
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            gap: 10px;
-        }
-
-        .modal-body {
-            padding: 14px;
-            overflow-y: auto;
-            display: flex;
-            flex-direction: column;
-            gap: 10px;
-            flex: 1 1 auto;
-            min-height: 200px;
-            max-height: calc(90vh - 100px);
-        }
-    </style>
+    <link rel="stylesheet" href="/static/styles.css" />
 </head>
 
 <body>
@@ -433,21 +233,22 @@
                 groupsArray.sort((a, b) => (b.lastDate || 0) - (a.lastDate || 0));
                 const moviesHtml = movies.length ? `<div class="section-block"><div class="grid">${movies.map(historyHTML).join('')}</div></div>` : '';
                 const seriesCards = groupsArray.map(g => {
-                    const header = `${escapeHtml(g.meta.seriesName || '')}`.trim();
+                    const header = `${escapeHtml(g.meta.seriesName || g.meta.title || '')}`.trim();
                     const lastDateStr = g.lastDate ? new Date(g.lastDate * 1000).toLocaleString() : '—';
                     const coverSrc = g.meta?.seriesThumb || g.items[0]?.seriesThumb || g.items[0]?.thumb;
                     const cover = coverSrc
                       ? `<img src="${coverSrc}" alt="">`
                       : `<span class="muted">No poster</span>`;
+                    const seriesId = g.meta?.seriesRatingKey || g.meta?.seriesId || g.items[0]?.seriesId || "";
                     return `
-        <div class="card" data-season-header="${g.key}">
+        <div class="card">
           <div class="poster">
             ${cover}
           </div>
           <div class="meta">
             <div class="title">${header}</div>
             <div class="muted">Viewed: ${lastDateStr}</div>
-            <button class="pill" data-season-header="${g.key}" style="padding:6px 10px; margin-top:6px;">Dettaglio episodi</button>
+            <button class="pill" data-series-id="${seriesId}" data-series-name="${escapeHtml(header)}" style="padding:6px 10px; margin-top:6px;">Dettaglio episodi</button>
           </div>
         </div>`;
                 }).join('');
@@ -455,12 +256,13 @@
                 const seriesHtml = seriesCards ? `<p class="section-title">Serie TV</p><div class="section-block"><div class="grid">${seriesCards}</div></div>` : '';
                 grid.innerHTML = `${moviesHtml}${spacer}${seriesHtml}`;
 
-                grid.querySelectorAll('button[data-season-header]').forEach(btn => {
+                grid.querySelectorAll('button[data-series-id]').forEach(btn => {
                     btn.addEventListener('click', () => {
-                        const key = btn.getAttribute('data-season-header');
-                        const group = grouped[key];
-                        if (!group) return;
-                        openHistoryModal(`${group.meta.seriesName || ''} ${group.meta.seasonName || ''}`.trim(), group.items);
+                        const seriesId = btn.getAttribute('data-series-id') || '';
+                        const seriesName = btn.getAttribute('data-series-name') || '';
+                        if (!historyUser.value || !seriesId) return;
+                        const url = `/static/history_detail.html?user=${encodeURIComponent(historyUser.value)}&seriesId=${encodeURIComponent(seriesId)}&seriesName=${encodeURIComponent(seriesName)}`;
+                        window.location.href = url;
                     });
                 });
             } else {

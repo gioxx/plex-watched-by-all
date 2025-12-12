@@ -1,0 +1,102 @@
+<!doctype html>
+<html lang="it">
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width,initial-scale=1" />
+    <title>Dettaglio episodi</title>
+    <link rel="icon" type="image/svg+xml" href="/static/favicon.svg" />
+    <link rel="stylesheet" href="/static/styles.css" />
+    <style>
+        h1 { margin: 0; font-size: 22px; }
+        .card { padding: 12px; }
+    </style>
+</head>
+<body>
+    <header>
+        <button class="pill" onclick="window.history.back()">← Back</button>
+        <img src="/static/favicon.svg" alt="" width="32" height="32" />
+        <div>
+            <h1 id="seriesTitle">Serie</h1>
+            <div class="muted" id="seriesInfo"></div>
+        </div>
+    </header>
+    <main>
+        <div id="grid" class="grid"></div>
+    </main>
+
+    <script>
+        const params = new URLSearchParams(window.location.search);
+        const userId = params.get('user') || '';
+        const seriesId = params.get('seriesId') || '';
+        const seriesName = params.get('seriesName') ? decodeURIComponent(params.get('seriesName')) : '';
+
+        document.getElementById('seriesTitle').textContent = seriesName || 'Serie';
+
+        async function loadDetail() {
+            if (!userId || !seriesId) {
+                document.getElementById('seriesInfo').textContent = 'Missing parameters.';
+                return;
+            }
+            const res = await fetch(`/api/user/${encodeURIComponent(userId)}/history`);
+            const data = await res.json();
+            const epis = (data.items || []).filter(e => e.seriesId === seriesId);
+            if (epis.length === 0) {
+                document.getElementById('seriesInfo').textContent = 'No episodes found.';
+                return;
+            }
+            const bySeason = {};
+            epis.forEach(ep => {
+                const key = ep.seasonName || `Season ${ep.seasonIndex || ''}` || 'Season';
+                if (!bySeason[key]) bySeason[key] = [];
+                bySeason[key].push(ep);
+            });
+            Object.values(bySeason).forEach(arr => {
+                arr.sort((a,b) => {
+                    const sa = a.seasonIndex || 0, sb = b.seasonIndex || 0;
+                    if (sa !== sb) return sa - sb;
+                    const ea = a.episodeIndex || 0, eb = b.episodeIndex || 0;
+                    if (ea !== eb) return ea - eb;
+                    return (a.date || 0) - (b.date || 0);
+                });
+            });
+            const seasons = Object.entries(bySeason).sort((a,b) => {
+                const sa = a[1][0]?.seasonIndex || 0;
+                const sb = b[1][0]?.seasonIndex || 0;
+                return sa - sb;
+            });
+            const grid = document.getElementById('grid');
+            grid.innerHTML = seasons.map(([name, eps]) => {
+                const lastDate = eps.reduce((m,e) => Math.max(m, e.date || 0), 0);
+                const lastDateStr = lastDate ? new Date(lastDate * 1000).toLocaleString() : '—';
+                const epiHtml = eps.map(e => {
+                    const code = (e.seasonIndex != null && e.episodeIndex != null)
+                        ? `S${String(e.seasonIndex).padStart(2,'0')}E${String(e.episodeIndex).padStart(2,'0')}`
+                        : '';
+                    const when = e.date ? new Date(e.date * 1000).toLocaleString() : '—';
+                    return `<div class="episode">
+                        <div>
+                            <div class="epi-title">${code ? code + ' · ' : ''}${(e.title && e.title !== seriesName) ? e.title : (e.episodeTitle || '')}</div>
+                            <div class="epi-sub">${e.seasonName || ''}</div>
+                        </div>
+                        <div class="epi-sub">Viewed: ${when}</div>
+                    </div>`;
+                }).join('');
+                return `<div class="card">
+                    <div class="season-head">
+                        <div>
+                            <div class="epi-title">${name}</div>
+                            <div class="epi-sub">Last viewed: ${lastDateStr}</div>
+                        </div>
+                        <div class="epi-sub">${eps.length} episode(s)</div>
+                    </div>
+                    <div style="display:flex; flex-direction:column; gap:6px;">${epiHtml}</div>
+                </div>`;
+            }).join('');
+
+            document.getElementById('seriesInfo').textContent = `${seriesName || ''} · ${epis.length} episode(s)`;
+        }
+
+        loadDetail();
+    </script>
+</body>
+</html>

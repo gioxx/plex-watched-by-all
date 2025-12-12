@@ -290,6 +290,7 @@ async def refresh_cache(force: bool = False) -> None:
                 "episodeIndex": it.get("IndexNumber"),
                 "seasonIndex": it.get("ParentIndexNumber"),
                 "seriesId": show_id or "",
+                "seasonId": season_id or "",
                 "episodeId": item_id,
                 "jellyfinId": item_id,
                 "thumb": thumb_url,

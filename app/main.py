@@ -498,12 +498,11 @@ async def user_history(user_id: str):
 
         if rk:
             md = await _item_title_thumb(str(rk))
-            if not md:
-                continue
-            out.update(md)
-            thumb = out.get("thumb") or thumb
+            if md:
+                out.update(md)
+                thumb = out.get("thumb") or thumb
 
-        # If there is no metadata/poster, skip the entry.
+        # If there is no poster at all, skip the entry.
         if not thumb:
             continue
 

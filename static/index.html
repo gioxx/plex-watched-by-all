@@ -158,7 +158,7 @@
 <body>
     <header>
         <div class="brand" style="display:flex; align-items:center; gap:8px;">
-            <img src="/static/favicon.svg" alt="" width="22" height="22" aria-hidden="true" />
+            <img src="/static/favicon.svg" alt="" width="44" height="44" aria-hidden="true" />
             <span>Watched (Jellyfin - Watched by Everyone)</span>
         </div>
         <div style="display:flex; gap:8px; align-items:center;">
@@ -344,25 +344,25 @@
             const q = search.value.trim().toLowerCase();
             const filtered = q ? items.filter(i => (i.title || '').toLowerCase().includes(q)) : items;
             if (mode === 'history') {
-                const movies = filtered.filter(i => !i.seriesName);
-                const episodes = filtered.filter(i => i.seriesName);
-                const grouped = {};
-                episodes.forEach(e => {
-                    const key = `${e.seriesName || 'Serie'}|${e.seasonName || ''}`;
-                    if (!grouped[key]) grouped[key] = { meta: e, items: [] };
-                    grouped[key].items.push(e);
-                });
-                const groupsHtml = Object.keys(grouped).map(k => {
-                    const g = grouped[k];
-                    const header = `${escapeHtml(g.meta.seriesName || '')} ${escapeHtml(g.meta.seasonName || '')}`.trim();
-                    return `
+            const movies = filtered.filter(i => !i.seriesName);
+            const episodes = filtered.filter(i => i.seriesName);
+            const grouped = {};
+            episodes.forEach(e => {
+                const key = `${e.seriesName || 'Serie'}|${e.seasonName || ''}`;
+                if (!grouped[key]) grouped[key] = { meta: e, items: [] };
+                grouped[key].items.push(e);
+            });
+            const groupsHtml = Object.keys(grouped).map(k => {
+                const g = grouped[k];
+                const header = `${escapeHtml(g.meta.seriesName || '')} ${escapeHtml(g.meta.seasonName || '')}`.trim();
+                return `
           <div style="border:1px solid #1d2330; padding:10px; border-radius:12px; background:#0f1320; display:flex; flex-direction:column; gap:8px;">
             <div style="font-weight:700;">${header}</div>
             <div class="grid">${g.items.map(historyHTML).join('')}</div>
           </div>`;
-                }).join('');
-                const moviesHtml = movies.length ? movies.map(historyHTML).join('') : '';
-                grid.innerHTML = moviesHtml + groupsHtml;
+            }).join('');
+            const moviesHtml = movies.length ? movies.map(historyHTML).join('') : '';
+            grid.innerHTML = moviesHtml + groupsHtml;
             } else {
                 grid.innerHTML = filtered.map(cardHTML).join('');
             }

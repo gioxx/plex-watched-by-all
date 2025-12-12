@@ -434,7 +434,7 @@
           </div>`;
                 }).join('');
                 const moviesHtml = movies.length ? movies.map(historyHTML).join('') : '';
-                const seriesHtml = groupsHtml ? `<div style="margin-top:12px;"><h2 style="margin:0 0 8px; font-size:18px;">Serie TV</h2>${groupsHtml}</div>` : '';
+                const seriesHtml = groupsHtml ? `<p class="muted" style="margin:12px 0 6px;">Serie TV</p><div class="grid">${groupsHtml}</div>` : '';
                 grid.innerHTML = `${moviesHtml}${seriesHtml}`;
 
                 // Attach click handlers for season detail

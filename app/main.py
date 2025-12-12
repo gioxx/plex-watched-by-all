@@ -232,6 +232,9 @@ async def refresh_cache(force: bool = False) -> None:
             elif typ == "episode":
                 show_id = str(it.get("SeriesId") or "").strip()
                 season_id = str(it.get("ParentId") or it.get("SeasonId") or "").strip()
+                series_thumb_url = ""
+                if series_primary_tag and show_id:
+                    series_thumb_url = _jellyfin_thumb(show_id, series_primary_tag)
                 if show_id:
                     cache.shows.add(show_id)
                 if season_id:
@@ -250,7 +253,7 @@ async def refresh_cache(force: bool = False) -> None:
                         "title": it.get("SeriesName") or "",
                         "year": "",
                         "type": "show",
-                        "thumb": thumb_url,
+                        "thumb": series_thumb_url or thumb_url,
                     }
                 if season_id and season_id not in cache.jellyfin_meta:
                     cache.jellyfin_meta[season_id] = {
@@ -293,6 +296,7 @@ async def refresh_cache(force: bool = False) -> None:
                 "seasonId": season_id or "",
                 "episodeId": item_id,
                 "jellyfinId": item_id,
+                "seriesThumb": series_thumb_url or thumb_url,
                 "thumb": thumb_url,
             }
             _record_history(juid, event)

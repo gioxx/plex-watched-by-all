@@ -418,30 +418,28 @@
                 });
                 const groupsArray = Object.entries(grouped).map(([k, v]) => ({ key: k, ...v }));
                 groupsArray.sort((a, b) => (b.lastDate || 0) - (a.lastDate || 0));
-                const groupsHtml = groupsArray.map(g => {
-                    const header = `${escapeHtml(g.meta.seriesName || '')} ${escapeHtml(g.meta.seasonName || '')}`.trim();
-                    const cover = g.items[0]?.thumb ? `<img src="${g.items[0].thumb}" alt="" style="width:74px; height:110px; object-fit:cover; border-radius:8px; border:1px solid #1d2330;">` : `<div style="width:74px; height:110px; border-radius:8px; border:1px solid #1d2330; display:flex; align-items:center; justify-content:center;" class="muted">No poster</div>`;
-                    const lastDateStr = g.lastDate ? new Date(g.lastDate * 1000).toLocaleString() : '—';
-                    return `
-          <div style="border:1px solid #1d2330; padding:10px; border-radius:12px; background:#0f1320; display:flex; flex-direction:column; gap:8px;">
-            <div style="display:flex; justify-content:space-between; align-items:center; gap:10px;">
-              <div style="display:flex; align-items:center; gap:8px;">
-                ${cover}
-                <div>
-                  <div style="font-weight:700;">${header}</div>
-                  <div class="muted">Ultima visione: ${lastDateStr}</div>
-                </div>
-              </div>
-              <button class="pill" data-season-header="${g.key}" style="padding:6px 10px;">Dettaglio episodi</button>
-            </div>
-            <div class="grid" data-season-grid="${g.key}" style="display:none;">${g.items.map(historyHTML).join('')}</div>
-          </div>`;
-                }).join('');
                 const moviesHtml = movies.length ? `<div class="section-block"><div class="grid">${movies.map(historyHTML).join('')}</div></div>` : '';
-                const seriesHtml = groupsHtml ? `<div class="section-block" style="margin-top:12px;"><p class="muted" style="margin:0 0 6px;">Serie TV</p><div class="grid">${groupsHtml}</div></div>` : '';
+                const seriesCards = groupsArray.map(g => {
+                    const header = `${escapeHtml(g.meta.seriesName || '')} ${escapeHtml(g.meta.seasonName || '')}`.trim();
+                    const lastDateStr = g.lastDate ? new Date(g.lastDate * 1000).toLocaleString() : '—';
+                    const cover = g.items[0]?.thumb
+                      ? `<img src="${g.items[0].thumb}" alt="">`
+                      : `<span class="muted">No poster</span>`;
+                    return `
+        <div class="card" data-season-header="${g.key}">
+          <div class="poster">
+            ${cover}
+          </div>
+          <div class="meta">
+            <div class="title">${header}</div>
+            <div class="muted">Viewed: ${lastDateStr}</div>
+            <button class="pill" data-season-header="${g.key}" style="padding:6px 10px; margin-top:6px;">Dettaglio episodi</button>
+          </div>
+        </div>`;
+                }).join('');
+                const seriesHtml = seriesCards ? `<p class="muted" style="margin:12px 0 6px;">Serie TV</p><div class="section-block"><div class="grid">${seriesCards}</div></div>` : '';
                 grid.innerHTML = `${moviesHtml}${seriesHtml}`;
 
-                // Attach click handlers for season detail
                 grid.querySelectorAll('button[data-season-header]').forEach(btn => {
                     btn.addEventListener('click', () => {
                         const key = btn.getAttribute('data-season-header');

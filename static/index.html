@@ -202,9 +202,9 @@
             display: flex;
             flex-direction: column;
             gap: 10px;
-            flex: 1 1 0;
-            min-height: 0;
-            max-height: calc(90vh - 80px);
+            flex: 1 1 auto;
+            min-height: 200px;
+            max-height: calc(90vh - 100px);
         }
     </style>
 </head>
@@ -387,19 +387,22 @@
 
         function historyHTML(it) {
             const date = it.date ? new Date(it.date * 1000).toLocaleString() : '—';
-            const thumb = it.thumb || it.jellyfinThumb || '';
+            const thumb = it.seriesThumb || it.thumb || it.jellyfinThumb || '';
+            const isEpisode = !!it.seriesName;
             const code = (it.seasonIndex != null && it.episodeIndex != null)
               ? `S${String(it.seasonIndex).padStart(2,'0')}E${String(it.episodeIndex).padStart(2,'0')}`
               : '';
-            const subtitle = it.seriesName ? `${escapeHtml(it.seriesName)} · ${escapeHtml(it.seasonName || '')}` : '';
+            const episodeLine = isEpisode
+              ? [it.seasonName, code, it.title].filter(Boolean).map(escapeHtml).join(' · ')
+              : '';
             return `
         <div class="card">
           <div class="poster">
             ${thumb ? `<img src="${thumb}" alt="">` : `<span class="muted">No poster</span>`}
           </div>
           <div class="meta">
-            <div class="title">${subtitle || escapeHtml(it.title || '')}</div>
-            <div class="muted">${escapeHtml(code)} Viewed: ${date}</div>
+            <div class="title">${isEpisode ? escapeHtml(it.seriesName || '') : escapeHtml(it.title || '')}</div>
+            <div class="muted">${episodeLine ? `${episodeLine} · ` : ''}Viewed: ${date}</div>
           </div>
         </div>
       `;
@@ -432,8 +435,9 @@
                 const seriesCards = groupsArray.map(g => {
                     const header = `${escapeHtml(g.meta.seriesName || '')}`.trim();
                     const lastDateStr = g.lastDate ? new Date(g.lastDate * 1000).toLocaleString() : '—';
-                    const cover = g.items[0]?.thumb
-                      ? `<img src="${g.items[0].thumb}" alt="">`
+                    const coverSrc = g.meta?.seriesThumb || g.items[0]?.seriesThumb || g.items[0]?.thumb;
+                    const cover = coverSrc
+                      ? `<img src="${coverSrc}" alt="">`
                       : `<span class="muted">No poster</span>`;
                     return `
         <div class="card" data-season-header="${g.key}">

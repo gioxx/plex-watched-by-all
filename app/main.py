@@ -288,6 +288,7 @@ async def refresh_cache(force: bool = False) -> None:
                 "episodeTitle": it.get("Name") or "",
                 "episodeIndex": it.get("IndexNumber"),
                 "seasonIndex": it.get("ParentIndexNumber"),
+                "seriesId": show_id,
                 "episodeId": item_id,
                 "jellyfinId": item_id,
                 "thumb": thumb_url,
@@ -497,12 +498,24 @@ async def user_history(user_id: str):
         out = dict(ev)
         rk = ev.get("ratingKey")
         thumb = ev.get("thumb")
+        series_id = ev.get("seriesId")
 
         if rk:
             md = await _item_title_thumb(str(rk))
             if md:
                 out.update(md)
                 thumb = out.get("thumb") or thumb
+
+        if series_id:
+            series_md = await _item_title_thumb(str(series_id))
+            if series_md:
+                if series_md.get("title") and not out.get("seriesName"):
+                    out["seriesName"] = series_md.get("title")
+                if series_md.get("thumb"):
+                    out["seriesThumb"] = series_md.get("thumb")
+                    if not thumb:
+                        thumb = series_md.get("thumb")
+                out["seriesRatingKey"] = series_id
 
         # If there is no poster at all, skip the entry.
         if not thumb:

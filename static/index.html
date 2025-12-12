@@ -129,6 +129,16 @@
         .sub {
             color: #b9c3d3;
             font-size: 13px;
+            min-height: 18px;
+        }
+
+        .ellipsis {
+            display: inline-block;
+            max-width: 140px;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+            vertical-align: bottom;
         }
 
         .muted {
@@ -231,7 +241,7 @@
                 return `
         <label style="display:flex; gap:10px; align-items:center; border:1px solid #1d2330; border-radius:12px; padding:10px;">
           <input type="checkbox" data-user-id="${u.user_id}" ${checked} />
-          <span>${escapeHtml(u.name)} <span class="muted">(${escapeHtml(u.user_id)})</span></span>
+          <span>${escapeHtml(u.name)} <span class="muted ellipsis">(${escapeHtml(u.user_id)})</span></span>
         </label>
       `;
             }).join('');
@@ -287,7 +297,9 @@
             if (it.officialRating) ratingBits.push(escapeHtml(it.officialRating));
             if (it.communityRating) ratingBits.push(`★ ${escapeHtml(it.communityRating)}`);
             if (typeof it.playCount === 'number') ratingBits.push(`Playcount: ${it.playCount}`);
-            const subline = [runtime, ratingBits.join(' · ')].filter(Boolean).join(' · ');
+            const subline = mode === 'shows'
+              ? runtime
+              : [runtime, ratingBits.join(' · ')].filter(Boolean).join(' · ');
             return `
         <div class="card">
           <div class="poster">

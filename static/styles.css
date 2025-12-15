@@ -251,3 +251,8 @@ h1 {
     object-fit: cover;
     display: block;
 }
+
+.episode-viewed {
+    color: #b9c3d3;
+    font-size: 12px;
+}

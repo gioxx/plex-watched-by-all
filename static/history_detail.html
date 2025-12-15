@@ -1,9 +1,9 @@
 <!doctype html>
-<html lang="it">
+<html lang="en">
 <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width,initial-scale=1" />
-    <title>Dettaglio episodi</title>
+    <title>Episode detail</title>
     <link rel="icon" type="image/svg+xml" href="/static/favicon.svg" />
     <link rel="stylesheet" href="/static/styles.css" />
 </head>
@@ -26,6 +26,9 @@
         const seriesId = params.get('seriesId') || '';
         const seriesName = params.get('seriesName') ? decodeURIComponent(params.get('seriesName')) : '';
 
+        let translations = {};
+        let currentLang = localStorage.getItem('lang') || 'en';
+
         function escapeHtml(str) {
             return String(str || '').replace(/[&<>"']/g, c => ({
                 '&': '&amp;',
@@ -36,18 +39,41 @@
             }[c]));
         }
 
-        document.getElementById('seriesTitle').textContent = seriesName || 'Serie';
+        function t(key, vars = {}) {
+            const base = translations[key] || key;
+            return Object.keys(vars).reduce((acc, k) => acc.replace(new RegExp(`{${k}}`, 'g'), vars[k]), base);
+        }
+
+        async function loadLang(lang) {
+            currentLang = lang;
+            try {
+                const r = await fetch(`/static/locales/${lang}.json`);
+                translations = await r.json();
+            } catch (e) {
+                translations = {};
+            }
+            localStorage.setItem('lang', lang);
+            applyStaticText();
+        }
+
+        function applyStaticText() {
+            document.title = t('title');
+            document.getElementById('seriesTitle').textContent = seriesName || t('label.tvSeries');
+            document.querySelector('button.pill').textContent = t('detail.back');
+        }
+
+        document.getElementById('seriesTitle').textContent = seriesName || 'Series';
 
         async function loadDetail() {
             if (!userId || !seriesId) {
-                document.getElementById('seriesInfo').textContent = 'Missing parameters.';
+                document.getElementById('seriesInfo').textContent = t('detail.missingParams');
                 return;
             }
             const res = await fetch(`/api/user/${encodeURIComponent(userId)}/history`);
             const data = await res.json();
             const epis = (data.items || []).filter(e => e.seriesId === seriesId);
             if (epis.length === 0) {
-                document.getElementById('seriesInfo').textContent = 'No episodes found.';
+                document.getElementById('seriesInfo').textContent = t('detail.noEpisodes');
                 return;
             }
             const bySeason = {};
@@ -85,25 +111,28 @@
                             <div class="epi-title">${escapeHtml(code ? code + ' · ' : '')}${escapeHtml(epTitle)}</div>
                             <div class="epi-sub">${escapeHtml(seasonLabel)}</div>
                         </div>
-                        <div class="epi-sub">Viewed: ${escapeHtml(when)}</div>
+                        <div class="episode-viewed">${t('detail.viewed')}: ${escapeHtml(when)}</div>
                     </div>`;
                 }).join('');
                 return `<div class="season-block">
                     <div class="season-head">
                         <div>
                             <div class="epi-title section-title" style="padding-top:0;">${escapeHtml(name)}</div>
-                            <div class="epi-sub">Last viewed: ${escapeHtml(lastDateStr)}</div>
+                            <div class="epi-sub">${t('detail.lastViewed')}: ${escapeHtml(lastDateStr)}</div>
                         </div>
-                        <div class="epi-sub">${escapeHtml(eps.length)} episode(s)</div>
+                        <div class="epi-sub">${t('detail.episodesCount', {count: eps.length})}</div>
                     </div>
                     <div class="episode-list">${epiHtml}</div>
                 </div>`;
             }).join('');
 
-            document.getElementById('seriesInfo').textContent = `${seriesName || ''} · ${epis.length} episode(s)`;
+            document.getElementById('seriesInfo').textContent = t('detail.seriesInfo', { series: seriesName || '', count: epis.length });
         }
 
-        loadDetail();
+        (async () => {
+            await loadLang(currentLang);
+            await loadDetail();
+        })();
     </script>
 </body>
 </html>

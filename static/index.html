@@ -13,54 +13,59 @@
     <header>
         <div class="brand" style="display:flex; align-items:center; gap:8px;">
             <img src="/static/favicon.svg" alt="" width="44" height="44" aria-hidden="true" />
-            <span>Watched (Jellyfin - Watched by Everyone)</span>
+            <span id="brandTitle">Watched (Jellyfin - Watched by Everyone)</span>
         </div>
         <div style="display:flex; gap:8px; align-items:center;">
-            <button id="btnUsers" class="pill" style="cursor:pointer;">Utenti</button>
+            <select id="langSelect" class="pill" style="cursor:pointer; background:#0f1320; color:#e9eef5; border-radius:12px;">
+                <option value="en">English</option>
+                <option value="it">Italiano</option>
+            </select>
+            <button id="btnUsers" class="pill" style="cursor:pointer;">Users</button>
             <div id="summary" class="pill">Loading…</div>
         </div>
     </header>
 
     <main>
         <div class="tabs">
-            <button id="tabMovies" class="active">Film</button>
-            <button id="tabShows">Stagioni (complete)</button>
-            <button id="tabHistory">Storico utente</button>
+            <button id="tabMovies" class="active">Movies</button>
+            <button id="tabShows">Seasons (complete)</button>
+            <button id="tabHistory">User history</button>
         </div>
 
         <div class="row">
-            <input id="search" placeholder="Cerca titolo…" />
+            <input id="search" placeholder="Search title…" />
             <span id="count" class="pill">—</span>
             <button id="refresh">Refresh</button>
         </div>
 
         <div id="historyControls" class="row" style="display:none;">
             <select id="historyUser" style="background:#0f1320; color:#e9eef5; border:1px solid #1d2330; padding:10px 12px; border-radius:12px; min-width:240px;"></select>
-            <span class="muted">Seleziona l'utente per vedere tutto ciò che ha visto (Jellyfin).</span>
+            <span class="muted">Select the user to see everything they watched (Jellyfin).</span>
         </div>
 
         <div id="grid" class="grid"></div>
 
         <div class="footer">
-            Definizione: un titolo appare qui solo se risulta “visto” da <b>tutti</b> gli utenti.
-            Per le serie: tutti gli episodi devono risultare visti da tutti.
+            Definition: a title appears here only if it is marked as watched by <b>all</b> users.
+            For series: every episode must be watched by everyone.
         </div>
     </main>
 
     <div id="usersModal" style="display:none; position:fixed; inset:0; background:rgba(0,0,0,.55);">
         <div style="max-width:720px; margin:8vh auto; background:#0f1320; border:1px solid #1d2330; border-radius:16px; overflow:hidden;">
             <div style="display:flex; justify-content:space-between; align-items:center; padding:14px 14px; border-bottom:1px solid #1d2330;">
-                <div style="font-weight:700;">Utenti considerati</div>
-                <button id="btnCloseUsers">Chiudi</button>
+                <div style="font-weight:700;" data-i18n="users.title">Selected users</div>
+                <button id="btnCloseUsers">Close</button>
             </div>
             <div style="padding:14px 14px; display:flex; flex-direction:column; gap:10px;">
-                <div class="muted">Se non selezioni nessuno, verranno considerati <b>tutti</b> gli utenti.</div>
+                <div class="muted" data-i18n="users.note">If you do not select anyone, <b>all</b> users will be considered.</div>
+                <div class="muted" data-i18n="label.usersDetected">Detected Jellyfin users</div>
                 <div id="usersList" style="display:grid; grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); gap:10px;"></div>
                 <div style="display:flex; gap:10px; justify-content:flex-end; flex-wrap:wrap; padding-top:6px;">
-                    <button id="btnSelectAll">Seleziona tutti</button>
-                    <button id="btnSelectNone">Nessuno (tutti)</button>
-                    <button id="btnApplyUsers">Applica + refresh</button>
-                    <button id="btnForceRefresh">Refresh forzato</button>
+                    <button id="btnSelectAll">Select all</button>
+                    <button id="btnSelectNone">None (all)</button>
+                    <button id="btnApplyUsers">Apply + refresh</button>
+                    <button id="btnForceRefresh">Force refresh</button>
                 </div>
             </div>
         </div>
@@ -77,6 +82,20 @@
     </div>
 
     <script>
+        let translations = {};
+        let currentLang = 'en';
+
+        function escapeHtml(s) {
+            return String(s || '').replace(/[&<>"']/g, (c) => ({
+                '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;'
+            }[c]));
+        }
+
+        function t(key, vars = {}) {
+            const base = translations[key] || translations[key.replace(/:[^.]*/, '')] || key;
+            return Object.keys(vars).reduce((acc, k) => acc.replace(new RegExp(`{${k}}`, 'g'), vars[k]), base);
+        }
+
         const grid = document.getElementById('grid');
         const summary = document.getElementById('summary');
         const count = document.getElementById('count');
@@ -87,6 +106,7 @@
         const refreshBtn = document.getElementById('refresh');
 
         const btnUsers = document.getElementById('btnUsers');
+        const langSelect = document.getElementById('langSelect');
         const usersModal = document.getElementById('usersModal');
         const btnCloseUsers = document.getElementById('btnCloseUsers');
         const usersList = document.getElementById('usersList');
@@ -100,6 +120,44 @@
         const historyModalTitle = document.getElementById('historyModalTitle');
         const historyModalBody = document.getElementById('historyModalBody');
         const btnCloseHistory = document.getElementById('btnCloseHistory');
+
+        async function loadLang(lang) {
+            currentLang = lang;
+            try {
+                const r = await fetch(`/static/locales/${lang}.json`);
+                translations = await r.json();
+            } catch (e) {
+                translations = {};
+            }
+            localStorage.setItem('lang', lang);
+            applyStaticText();
+            render();
+        }
+
+        function applyStaticText() {
+            document.title = t('title');
+            document.getElementById('brandTitle').textContent = t('title');
+            tabMovies.textContent = t('tab.movies');
+            tabShows.textContent = t('tab.shows');
+            tabHistory.textContent = t('tab.history');
+            search.placeholder = t('search.placeholder');
+            refreshBtn.textContent = t('button.refresh');
+            btnUsers.textContent = t('header.users');
+            document.getElementById('historyControls').querySelector('.muted').textContent = t('history.helper');
+            document.querySelector('.footer').innerHTML = t('footer.text');
+
+            // Users modal
+            document.querySelector('#usersModal [data-i18n="users.title"]').textContent = t('usersModal.title');
+            document.getElementById('btnCloseUsers').textContent = t('usersModal.close');
+            document.querySelector('#usersModal [data-i18n="users.note"]').innerHTML = t('usersModal.note');
+            document.querySelector('#usersModal [data-i18n="label.usersDetected"]').textContent = t('label.usersDetected');
+            btnSelectAll.textContent = t('usersModal.selectAll');
+            btnSelectNone.textContent = t('usersModal.selectNone');
+            btnApplyUsers.textContent = t('usersModal.apply');
+            btnForceRefresh.textContent = t('usersModal.force');
+
+            langSelect.value = currentLang;
+        }
 
         let allUsers = [];
         let selectedUserIds = new Set();
@@ -168,14 +226,14 @@
             const ratingBits = [];
             if (it.officialRating) ratingBits.push(escapeHtml(it.officialRating));
             if (it.communityRating) ratingBits.push(`★ ${escapeHtml(it.communityRating)}`);
-            if (typeof it.playCount === 'number') ratingBits.push(`Playcount: ${it.playCount}`);
+            if (typeof it.playCount === 'number') ratingBits.push(t('label.playcount', {count: it.playCount}));
             const subline = mode === 'shows'
               ? runtime
               : [runtime, ratingBits.join(' · ')].filter(Boolean).join(' · ');
             return `
         <div class="card">
           <div class="poster">
-            ${it.thumb ? `<img src="${it.thumb}" alt="">` : `<span class="muted">No poster</span>`}
+            ${it.thumb ? `<img src="${it.thumb}" alt="">` : `<span class="muted">${t('label.noPoster')}</span>`}
           </div>
           <div class="meta">
             <div class="title">${escapeHtml(it.title)}${escapeHtml(year)}</div>
@@ -198,11 +256,11 @@
             return `
         <div class="card">
           <div class="poster">
-            ${thumb ? `<img src="${thumb}" alt="">` : `<span class="muted">No poster</span>`}
+            ${thumb ? `<img src="${thumb}" alt="">` : `<span class="muted">${t('label.noPoster')}</span>`}
           </div>
           <div class="meta">
             <div class="title">${isEpisode ? escapeHtml(it.seriesName || '') : escapeHtml(it.title || '')}</div>
-            <div class="muted">${episodeLine ? `${episodeLine} · ` : ''}Viewed: ${date}</div>
+            <div class="muted">${episodeLine ? `${episodeLine} · ` : ''}${t('label.viewed')}: ${escapeHtml(date)}</div>
           </div>
         </div>
       `;
@@ -238,7 +296,7 @@
                     const coverSrc = g.meta?.seriesThumb || g.items[0]?.seriesThumb || g.items[0]?.thumb;
                     const cover = coverSrc
                       ? `<img src="${coverSrc}" alt="">`
-                      : `<span class="muted">No poster</span>`;
+                      : `<span class="muted">${t('label.noPoster')}</span>`;
                     const seriesId = g.meta?.seriesRatingKey || g.meta?.seriesId || g.items[0]?.seriesId || g.key || "";
                     return `
         <div class="card">
@@ -247,13 +305,13 @@
           </div>
           <div class="meta">
             <div class="title">${header}</div>
-            <div class="muted">Viewed: ${lastDateStr}</div>
-            <button class="pill" data-series-id="${seriesId}" data-series-name="${escapeHtml(header)}" style="padding:6px 10px; margin-top:6px;">Dettaglio episodi</button>
+            <div class="muted">${t('label.viewed')}: ${escapeHtml(lastDateStr)}</div>
+            <button class="pill" data-series-id="${seriesId}" data-series-name="${escapeHtml(header)}" style="padding:6px 10px; margin-top:6px;">${t('button.episodesDetail')}</button>
           </div>
         </div>`;
                 }).join('');
                 const spacer = moviesHtml && seriesCards ? `<div style="height:18px;"></div>` : '';
-                const seriesHtml = seriesCards ? `<p class="section-title">Serie TV</p><div class="section-block"><div class="grid">${seriesCards}</div></div>` : '';
+                const seriesHtml = seriesCards ? `<p class="section-title">${t('label.tvSeries')}</p><div class="section-block"><div class="grid">${seriesCards}</div></div>` : '';
                 grid.innerHTML = `${moviesHtml}${spacer}${seriesHtml}`;
 
                 grid.querySelectorAll('button[data-series-id]').forEach(btn => {
@@ -277,7 +335,7 @@
             const r = await fetch('/api/summary');
             const s = await r.json();
             const date = s.lastRefresh ? new Date(s.lastRefresh * 1000).toLocaleString() : '—';
-            summary.textContent = `${s.users} utenti · ${s.moviesByAll} film · ${s.showsByAll} stagioni · aggiornato: ${date}`;
+            summary.textContent = t('summary.template', { users: s.users, movies: s.moviesByAll, seasons: s.showsByAll, date });
         }
 
         async function loadItems() {
@@ -367,6 +425,12 @@
             await forceRefresh();
         });
 
+        langSelect.addEventListener('change', async (e) => {
+            await loadLang(e.target.value);
+            await loadSummary();
+            await loadItems();
+        });
+
         function openHistoryModal(title, epis) {
             historyModalTitle.textContent = title || 'Dettaglio episodi';
             historyModalBody.innerHTML = epis.map(historyHTML).join('');
@@ -388,6 +452,8 @@
         });
 
         (async () => {
+            const storedLang = localStorage.getItem('lang') || 'en';
+            await loadLang(storedLang);
             await loadSummary();
             try { await loadUsers(); } catch (e) { }
             await loadItems();

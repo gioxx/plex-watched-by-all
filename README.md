@@ -1,4 +1,4 @@
-# Watched (Jellyfin – Watched by Everyone)
+# Watched (_former Jellyfin – Watched by Everyone_)
 
 Web dashboard to explore what’s been watched in Jellyfin. It highlights content completed by all selected users, and exposes full viewing history per user (movies, seasons, and episodes).
 
@@ -10,7 +10,7 @@ Web dashboard to explore what’s been watched in Jellyfin. It highlights conten
 
 ## Data sources and scope
 - Pulls directly from Jellyfin watch history and metadata (posters, ratings, runtime, play count).
-- Actually compatible with Jellyfin only.
+- Actually compatible with Jellyfin only (but the idea is to expand the project and also include Plex/Tautulli).
 
 ## Interaction notes
 - Use the **Users** selector to choose which Jellyfin users are considered when computing “watched by everyone.”

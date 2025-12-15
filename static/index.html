@@ -1,10 +1,10 @@
 <!doctype html>
-<html lang="it">
+<html lang="en">
 
 <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width,initial-scale=1" />
-    <title>Jellyfin - Watched by Everyone</title>
+    <title>Watched</title>
     <link rel="icon" type="image/svg+xml" href="/static/favicon.svg" />
     <link rel="stylesheet" href="/static/styles.css" />
 </head>
@@ -13,7 +13,7 @@
     <header>
         <div class="brand" style="display:flex; align-items:center; gap:8px;">
             <img src="/static/favicon.svg" alt="" width="44" height="44" aria-hidden="true" />
-            <span id="brandTitle">Watched (Jellyfin - Watched by Everyone)</span>
+            <span id="brandTitle">Watched</span>
         </div>
         <div style="display:flex; gap:8px; align-items:center;">
             <select id="langSelect" class="pill" style="cursor:pointer; background:#0f1320; color:#e9eef5; border-radius:12px;">
@@ -40,7 +40,7 @@
 
         <div id="historyControls" class="row" style="display:none;">
             <select id="historyUser" style="background:#0f1320; color:#e9eef5; border:1px solid #1d2330; padding:10px 12px; border-radius:12px; min-width:240px;"></select>
-            <span class="muted">Select the user to see everything they watched (Jellyfin).</span>
+            <span class="muted">Select the user to see everything they watched.</span>
         </div>
 
         <div id="grid" class="grid"></div>
@@ -59,7 +59,7 @@
             </div>
             <div style="padding:14px 14px; display:flex; flex-direction:column; gap:10px;">
                 <div class="muted" data-i18n="users.note">If you do not select anyone, <b>all</b> users will be considered.</div>
-                <div class="muted" data-i18n="label.usersDetected">Detected Jellyfin users</div>
+                <div class="muted" data-i18n="label.usersDetected">Detected users</div>
                 <div id="usersList" style="display:grid; grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); gap:10px;"></div>
                 <div style="display:flex; gap:10px; justify-content:flex-end; flex-wrap:wrap; padding-top:6px;">
                     <button id="btnSelectAll">Select all</button>

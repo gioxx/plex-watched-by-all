@@ -6,42 +6,6 @@
     <title>Dettaglio episodi</title>
     <link rel="icon" type="image/svg+xml" href="/static/favicon.svg" />
     <link rel="stylesheet" href="/static/styles.css" />
-    <style>
-        h1 { margin: 0; font-size: 22px; }
-        .card { padding: 12px; }
-        .season-block { margin-bottom: 22px; }
-        .episode-list {
-            display: grid;
-            grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
-            gap: 10px;
-        }
-        .episode {
-            display: flex;
-            gap: 12px;
-            align-items: center;
-            border: 1px solid #1d2330;
-            border-radius: 12px;
-            padding: 10px;
-            background: #0b0f1c;
-        }
-        .episode-cover {
-            width: 60px;
-            height: 90px;
-            border-radius: 10px;
-            overflow: hidden;
-            background: #0b0c10;
-            flex: 0 0 auto;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-        }
-        .episode-cover img {
-            width: 100%;
-            height: 100%;
-            object-fit: cover;
-            display: block;
-        }
-    </style>
 </head>
 <body>
     <header>
@@ -61,6 +25,16 @@
         const userId = params.get('user') || '';
         const seriesId = params.get('seriesId') || '';
         const seriesName = params.get('seriesName') ? decodeURIComponent(params.get('seriesName')) : '';
+
+        function escapeHtml(str) {
+            return String(str || '').replace(/[&<>"']/g, c => ({
+                '&': '&amp;',
+                '<': '&lt;',
+                '>': '&gt;',
+                '"': '&quot;',
+                "'": '&#39;'
+            }[c]));
+        }
 
         document.getElementById('seriesTitle').textContent = seriesName || 'Serie';
 
@@ -101,24 +75,26 @@
                     const when = e.date ? new Date(e.date * 1000).toLocaleString() : '—';
                     const coverSrc = e.thumb || e.jellyfinThumb || '';
                     const cover = coverSrc
-                        ? `<img src="${coverSrc}" alt="">`
+                        ? `<img src="${escapeHtml(coverSrc)}" alt="">`
                         : `<span class="muted">No poster</span>`;
+                    const epTitle = (e.title && e.title !== seriesName) ? e.title : (e.episodeTitle || '');
+                    const seasonLabel = e.seasonName || '';
                     return `<div class="episode">
                         <div class="episode-cover">${cover}</div>
                         <div style="flex:1 1 auto;">
-                            <div class="epi-title">${code ? code + ' · ' : ''}${(e.title && e.title !== seriesName) ? e.title : (e.episodeTitle || '')}</div>
-                            <div class="epi-sub">${e.seasonName || ''}</div>
+                            <div class="epi-title">${escapeHtml(code ? code + ' · ' : '')}${escapeHtml(epTitle)}</div>
+                            <div class="epi-sub">${escapeHtml(seasonLabel)}</div>
                         </div>
-                        <div class="epi-sub">Viewed: ${when}</div>
+                        <div class="epi-sub">Viewed: ${escapeHtml(when)}</div>
                     </div>`;
                 }).join('');
                 return `<div class="season-block">
                     <div class="season-head">
                         <div>
-                            <div class="epi-title section-title" style="padding-top:0;">${name}</div>
-                            <div class="epi-sub">Last viewed: ${lastDateStr}</div>
+                            <div class="epi-title section-title" style="padding-top:0;">${escapeHtml(name)}</div>
+                            <div class="epi-sub">Last viewed: ${escapeHtml(lastDateStr)}</div>
                         </div>
-                        <div class="epi-sub">${eps.length} episode(s)</div>
+                        <div class="epi-sub">${escapeHtml(eps.length)} episode(s)</div>
                     </div>
                     <div class="episode-list">${epiHtml}</div>
                 </div>`;

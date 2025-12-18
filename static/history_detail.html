@@ -75,6 +75,10 @@
             document.getElementById('seriesTitle').textContent = seriesName || t('label.tvSeries');
             document.getElementById('backBtn').textContent = t('detail.back');
             document.getElementById('langSelect').value = currentLang;
+            document.getElementById('langSelect').querySelectorAll('option').forEach(opt => {
+                const code = (opt.value || '').toUpperCase();
+                opt.textContent = `${t('header.langIcon')} ${code}`;
+            });
             document.getElementById('themeToggle').setAttribute('aria-label', currentTheme === 'light' ? t('theme.dark') : t('theme.light'));
         }
 

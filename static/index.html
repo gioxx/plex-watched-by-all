@@ -163,7 +163,8 @@
 
             langSelect.value = currentLang;
             langSelect.querySelectorAll('option').forEach(opt => {
-                opt.textContent = (opt.value || '').toUpperCase();
+                const code = (opt.value || '').toUpperCase();
+                opt.textContent = `${t('header.langIcon')} ${code}`;
             });
 
             if (themeToggle) {

@@ -15,14 +15,14 @@
             <img src="/static/watched_icon.webp" alt="" width="44" height="44" aria-hidden="true" />
             <span id="brandTitle">Watched</span>
         </div>
-        <div style="display:flex; gap:8px; align-items:center;">
+        <div style="display:flex; gap:8px; align-items:center; flex-wrap:wrap; justify-content:flex-end;">
+            <button id="btnUsers" class="pill" style="cursor:pointer;">👥 Users</button>
+            <div id="summary" class="pill">ℹ️ Loading…</div>
             <select id="langSelect" class="pill lang-select" style="cursor:pointer;">
                 <option value="en">EN</option>
                 <option value="it">IT</option>
             </select>
             <button id="themeToggle" class="pill icon-btn" type="button" aria-label="Toggle theme">🌙</button>
-            <button id="btnUsers" class="pill" style="cursor:pointer;">👥 Users</button>
-            <div id="summary" class="pill">ℹ️ Loading…</div>
         </div>
     </header>
 
@@ -48,7 +48,6 @@
 
         <div class="footer">
             Definition: a title appears here only if it is marked as watched by <b>all</b> users.
-            For series: every episode must be watched by everyone.
         </div>
     </main>
 

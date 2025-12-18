@@ -10,7 +10,7 @@
   "search.placeholder": "Cerca titolo…",
   "button.refresh": "Refresh",
   "history.helper": "Seleziona l'utente per vedere tutto ciò che ha visto.",
-  "footer.text": "Definizione: un titolo appare qui solo se risulta visto da tutti gli utenti. Per le serie: tutti gli episodi devono risultare visti da tutti.",
+  "footer.text": "Definizione: un titolo appare qui solo se risulta visto da tutti gli utenti.",
   "usersModal.title": "Utenti considerati",
   "usersModal.close": "Chiudi",
   "usersModal.note": "Se non selezioni nessuno, verranno considerati <b>tutti</b> gli utenti.",

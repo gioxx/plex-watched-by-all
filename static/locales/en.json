@@ -10,7 +10,7 @@
   "search.placeholder": "Search title…",
   "button.refresh": "Refresh",
   "history.helper": "Select the user to see everything they watched.",
-  "footer.text": "Definition: a title appears here only if it is marked as watched by all users. For series: every episode must be watched by everyone.",
+  "footer.text": "Definition: a title appears here only if it is marked as watched by all users.",
   "usersModal.title": "Selected users",
   "usersModal.close": "Close",
   "usersModal.note": "If you do not select anyone, <b>all</b> users will be considered.",

@@ -33,5 +33,7 @@
   "detail.lastViewed": "Last viewed",
   "detail.episodesCount": "{count} episode(s)",
   "detail.viewed": "Viewed",
-  "detail.seriesInfo": "{series} · {count} episode(s)"
+  "detail.seriesInfo": "{series} · {count} episode(s)",
+  "theme.light": "Switch to light theme",
+  "theme.dark": "Switch to dark theme"
 }

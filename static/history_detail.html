@@ -5,17 +5,28 @@
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width,initial-scale=1" />
     <title>Watched: Episodes details</title>
-    <link rel="icon" type="image/svg+xml" href="/static/favicon.svg" />
+    <link rel="icon" type="image/webp" href="/static/watched_icon.webp" />
     <link rel="stylesheet" href="/static/styles.css" />
 </head>
 
 <body>
     <header>
-        <button class="pill" onclick="window.history.back()">← Back</button>
-        <img src="/static/favicon.svg" alt="" width="32" height="32" />
-        <div>
-            <h1 id="seriesTitle">Serie</h1>
-            <div class="muted" id="seriesInfo"></div>
+        <div class="header-left">
+            <button id="backBtn" class="pill" onclick="window.history.back()">← Back</button>
+            <div class="brand">
+                <img src="/static/watched_icon.webp" alt="" width="34" height="34" />
+                <div>
+                    <h1 id="seriesTitle">Serie</h1>
+                    <div class="muted" id="seriesInfo"></div>
+                </div>
+            </div>
+        </div>
+        <div class="header-actions">
+            <select id="langSelect" class="pill lang-select" aria-label="Language">
+                <option value="en">EN</option>
+                <option value="it">IT</option>
+            </select>
+            <button id="themeToggle" class="pill icon-btn" type="button" aria-label="Toggle theme">🌙</button>
         </div>
     </header>
     <main>
@@ -30,6 +41,7 @@
 
         let translations = {};
         let currentLang = localStorage.getItem('lang') || 'en';
+        let currentTheme = localStorage.getItem('theme') || 'dark';
 
         function escapeHtml(str) {
             return String(str || '').replace(/[&<>"']/g, c => ({
@@ -61,10 +73,20 @@
         function applyStaticText() {
             document.title = t('title');
             document.getElementById('seriesTitle').textContent = seriesName || t('label.tvSeries');
-            document.querySelector('button.pill').textContent = t('detail.back');
+            document.getElementById('backBtn').textContent = t('detail.back');
+            document.getElementById('langSelect').value = currentLang;
+            document.getElementById('themeToggle').setAttribute('aria-label', currentTheme === 'light' ? t('theme.dark') : t('theme.light'));
         }
 
         document.getElementById('seriesTitle').textContent = seriesName || 'Series';
+
+        function applyTheme(theme) {
+            currentTheme = theme === 'light' ? 'light' : 'dark';
+            document.body.setAttribute('data-theme', currentTheme);
+            localStorage.setItem('theme', currentTheme);
+            document.getElementById('themeToggle').textContent = currentTheme === 'light' ? '☀️' : '🌙';
+            document.getElementById('themeToggle').setAttribute('aria-label', currentTheme === 'light' ? t('theme.dark') : t('theme.light'));
+        }
 
         async function loadDetail() {
             if (!userId || !seriesId) {
@@ -104,7 +126,7 @@
                     const coverSrc = e.thumb || e.jellyfinThumb || '';
                     const cover = coverSrc
                         ? `<img src="${escapeHtml(coverSrc)}" alt="">`
-                        : `<span class="muted">No poster</span>`;
+                        : `<span class="muted">${escapeHtml(t('label.noPoster'))}</span>`;
                     const epTitle = (e.title && e.title !== seriesName) ? e.title : (e.episodeTitle || '');
                     const seasonLabel = e.seasonName || '';
                     return `<div class="episode">
@@ -133,8 +155,18 @@
 
         (async () => {
             await loadLang(currentLang);
+            applyTheme(currentTheme);
             await loadDetail();
         })();
+
+        document.getElementById('langSelect').addEventListener('change', async (e) => {
+            await loadLang(e.target.value);
+            await loadDetail();
+        });
+
+        document.getElementById('themeToggle').addEventListener('click', () => {
+            applyTheme(currentTheme === 'light' ? 'dark' : 'light');
+        });
     </script>
 </body>
 </html>
